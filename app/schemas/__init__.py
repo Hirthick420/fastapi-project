@@ -1,2 +1,2 @@
-# app/schemas/__init__.py
-from app.schemas.user import UserCreate, UserRead  # noqa: F401
+from .user import UserCreate, UserRead  # existing from Module 10
+from .calculation import CalculationCreate, CalculationRead
