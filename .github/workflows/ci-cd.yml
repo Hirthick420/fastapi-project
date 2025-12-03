@@ -8,14 +8,13 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # ⬇️ Start a PostgreSQL service for pytest
     services:
       postgres:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: fastapi_test_db
+          POSTGRES_DB: fastapi_db          # 👈 change this
         ports:
           - 5432:5432
         options: >-
@@ -24,9 +23,8 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-    # env seen by your FastAPI app / SQLAlchemy in tests
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastapi_test_db
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastapi_db  # 👈 change this
 
     steps:
       - name: Checkout repository

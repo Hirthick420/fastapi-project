@@ -1,11 +1,16 @@
-# app/main.py (only the *relevant* parts shown)
+# app/main.py
 
 from typing import List
 
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from app.db.base import Base
+from app.db.session import engine
 from app.dependencies import get_db
+
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRead
 from app.core.security import get_password_hash, verify_password
@@ -13,18 +18,45 @@ from app.core.security import get_password_hash, verify_password
 from app.models.calculation import Calculation
 from app.schemas.calculation import CalculationCreate, CalculationRead
 
+from app.routers import auth
+
+# -------------------------
+# DB setup
+# -------------------------
+Base.metadata.create_all(bind=engine)
+
+# -------------------------
+# FastAPI app
+# -------------------------
 app = FastAPI(title="FastAPI Calculator API")
 
+# Routers (JWT auth router, etc.)
+app.include_router(auth.router)
+
+# Static files (CSS/JS) for front-end
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# -------------------------
+# Root + HTML pages
+# -------------------------
 @app.get("/")
 def root():
     return {"message": "FastAPI Calculator API is running. Go to /docs for Swagger UI."}
 
+
+@app.get("/register-page", include_in_schema=False)
+def register_page():
+    return FileResponse("app/static/html/register.html")
+
+
+@app.get("/login-page", include_in_schema=False)
+def login_page():
+    return FileResponse("app/static/html/login.html")
+
+
 # -------------------------
-# USER ROUTES (already working – keep yours)
+# USER ROUTES (existing)
 # -------------------------
-
-
-
 @app.post("/users/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     existing = (
@@ -42,17 +74,15 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         username=user_in.username,
         email=user_in.email,
-        password_hash=hashed_pw,
+        password_hash=hashed_pw,  # ✅ here too
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-
 @app.post("/users/login", response_model=UserRead)
 def login_user(user_in: UserCreate, db: Session = Depends(get_db)):
-    # assuming same schema as register (username, email, password)
     db_user = db.query(User).filter(User.username == user_in.username).first()
     if not db_user or not verify_password(user_in.password, db_user.password_hash):
         raise HTTPException(
@@ -63,9 +93,8 @@ def login_user(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 # -------------------------
-# CALCULATION ROUTES (NEW / FIXED)
+# CALCULATION ROUTES
 # -------------------------
-
 def _compute_result(a: float, b: float, type_: str) -> float:
     """Pure function that actually does the math."""
     if type_ == "add":
@@ -76,14 +105,11 @@ def _compute_result(a: float, b: float, type_: str) -> float:
         return a * b
     if type_ == "div":
         if b == 0:
-            # This should already be blocked by the Pydantic validator,
-            # but we double-check to avoid 500s.
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Division by zero is not allowed",
             )
         return a / b
-    # Should never happen because schema restricts type, but just in case:
     raise HTTPException(status_code=400, detail="Invalid calculation type")
 
 
@@ -154,5 +180,4 @@ def delete_calculation(calc_id: int, db: Session = Depends(get_db)):
 
     db.delete(calc)
     db.commit()
-    # 204 means "No Content" -> we just return nothing
     return
