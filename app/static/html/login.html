@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Login</title>
+</head>
+<body>
+    <h1>User Sign In</h1>
+
+    <form id="login-form">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <!-- This must be the **only** element with visible text "Login" -->
+        <button type="button" onclick="handleLoginClick()">Login</button>
+    </form>
+
+    <p id="message"></p>
+
+    <script>
+        async function handleLoginClick() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const msg = document.getElementById("message");
+
+            msg.textContent = "";
+            msg.style.color = "black";
+
+            if (!email || !password) {
+                msg.textContent = "Validation error – check email/password fields.";
+                msg.style.color = "red";
+                return;
+            }
+
+            try {
+                const resp = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (resp.ok) {
+                    msg.textContent = "Login successful!";
+                    msg.style.color = "green";
+                } else if (resp.status === 401) {
+                    msg.textContent = "Invalid email or password.";
+                    msg.style.color = "red";
+                } else {
+                    msg.textContent = "Login failed. Please try again.";
+                    msg.style.color = "red";
+                }
+            } catch (err) {
+                console.error(err);
+                msg.textContent = "Network error. Please try again.";
+                msg.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
