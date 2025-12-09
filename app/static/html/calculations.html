@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculations BREAD</title>
+</head>
+<body>
+    <h1>User Calculations</h1>
+
+    <p>
+        You can register at <a href="/register-page">/register-page</a> and log in at
+        <a href="/login-page">/login-page</a>. This page talks to the /calculations API.
+    </p>
+
+    <!-- Message area for errors / success -->
+    <p id="message"></p>
+
+    <!-- ADD / CREATE -->
+    <h2>Add a new calculation</h2>
+    <form id="create-form">
+        <label for="a">Operand A:</label>
+        <input type="number" id="a" name="a" step="any" required><br><br>
+
+        <label for="b">Operand B:</label>
+        <input type="number" id="b" name="b" step="any" required><br><br>
+
+        <label for="type">Operation:</label>
+        <select id="type" name="type" required>
+            <option value="add">add</option>
+            <option value="sub">sub</option>
+            <option value="mul">mul</option>
+            <option value="div">div</option>
+        </select><br><br>
+
+        <button type="button" id="create-button">Create Calculation</button>
+    </form>
+
+    <hr>
+
+    <!-- BROWSE / LIST -->
+    <h2>Your Calculations</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>A</th>
+                <th>B</th>
+                <th>Type</th>
+                <th>Result</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="calc-rows">
+            <!-- rows injected here by JS -->
+        </tbody>
+    </table>
+
+    <script>
+        const messageEl = document.getElementById("message");
+        const rowsEl = document.getElementById("calc-rows");
+
+        function showMessage(text, color = "black") {
+            messageEl.textContent = text;
+            messageEl.style.color = color;
+        }
+
+        async function loadCalculations() {
+            try {
+                const resp = await fetch("/calculations");
+                if (!resp.ok) {
+                    showMessage("Failed to load calculations.", "red");
+                    return;
+                }
+                const items = await resp.json();
+                rowsEl.innerHTML = "";
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    const tr = document.createElement("tr");
+                    const td = document.createElement("td");
+                    td.colSpan = 6;
+                    td.textContent = "No calculations yet.";
+                    tr.appendChild(td);
+                    rowsEl.appendChild(tr);
+                    return;
+                }
+
+                for (const item of items) {
+                    const tr = document.createElement("tr");
+                    tr.dataset.id = item.id;
+
+                    tr.innerHTML = `
+                        <td>${item.id}</td>
+                        <td>${item.a}</td>
+                        <td>${item.b}</td>
+                        <td>${item.type}</td>
+                        <td>${item.result}</td>
+                        <td>
+                            <button type="button" class="edit-btn">Edit</button>
+                            <button type="button" class="delete-btn">Delete</button>
+                        </td>
+                    `;
+
+                    rowsEl.appendChild(tr);
+                }
+
+                attachRowHandlers();
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while loading calculations.", "red");
+            }
+        }
+
+        function attachRowHandlers() {
+            const editButtons = document.querySelectorAll(".edit-btn");
+            const deleteButtons = document.querySelectorAll(".delete-btn");
+
+            editButtons.forEach(btn => {
+                btn.onclick = async (event) => {
+                    const tr = event.target.closest("tr");
+                    const id = tr.dataset.id;
+
+                    const currentA = tr.children[1].textContent;
+                    const currentB = tr.children[2].textContent;
+                    const currentType = tr.children[3].textContent;
+
+                    const newA = prompt("Enter new A:", currentA);
+                    if (newA === null) return;
+                    const newB = prompt("Enter new B:", currentB);
+                    if (newB === null) return;
+                    const newType = prompt("Enter new type (add/sub/mul/div):", currentType);
+                    if (newType === null) return;
+
+                    const aVal = parseFloat(newA);
+                    const bVal = parseFloat(newB);
+
+                    if (Number.isNaN(aVal) || Number.isNaN(bVal)) {
+                        showMessage("A and B must be numbers.", "red");
+                        return;
+                    }
+
+                    if (!["add", "sub", "mul", "div"].includes(newType)) {
+                        showMessage("Type must be one of: add, sub, mul, div.", "red");
+                        return;
+                    }
+
+                    try {
+                        const resp = await fetch(`/calculations/${id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ a: aVal, b: bVal, type: newType })
+                        });
+
+                        if (!resp.ok) {
+                            const data = await resp.json().catch(() => ({}));
+                            const detail = data && data.detail ? data.detail : "Update failed.";
+                            showMessage(detail, "red");
+                            return;
+                        }
+
+                        showMessage("Calculation updated successfully.", "green");
+                        await loadCalculations();
+                    } catch (err) {
+                        console.error(err);
+                        showMessage("Network error while updating.", "red");
+                    }
+                };
+            });
+
+            deleteButtons.forEach(btn => {
+                btn.onclick = async (event) => {
+                    const tr = event.target.closest("tr");
+                    const id = tr.dataset.id;
+
+                    const confirmDelete = confirm(`Delete calculation ${id}?`);
+                    if (!confirmDelete) return;
+
+                    try {
+                        const resp = await fetch(`/calculations/${id}`, {
+                            method: "DELETE"
+                        });
+
+                        if (!resp.ok && resp.status !== 204) {
+                            const data = await resp.json().catch(() => ({}));
+                            const detail = data && data.detail ? data.detail : "Delete failed.";
+                            showMessage(detail, "red");
+                            return;
+                        }
+
+                        showMessage("Calculation deleted.", "green");
+                        await loadCalculations();
+                    } catch (err) {
+                        console.error(err);
+                        showMessage("Network error while deleting.", "red");
+                    }
+                };
+            });
+        }
+
+        async function handleCreateClick() {
+            const aInput = document.getElementById("a");
+            const bInput = document.getElementById("b");
+            const typeSelect = document.getElementById("type");
+
+            const aVal = parseFloat(aInput.value);
+            const bVal = parseFloat(bInput.value);
+            const typeVal = typeSelect.value;
+
+            if (Number.isNaN(aVal) || Number.isNaN(bVal)) {
+                showMessage("A and B must be numbers.", "red");
+                return;
+            }
+
+            if (!["add", "sub", "mul", "div"].includes(typeVal)) {
+                showMessage("Type must be one of: add, sub, mul, div.", "red");
+                return;
+            }
+
+            try {
+                const resp = await fetch("/calculations", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ a: aVal, b: bVal, type: typeVal })
+                });
+
+                if (resp.status === 422) {
+                    const data = await resp.json().catch(() => ({}));
+                    const detail = data && data.detail ? JSON.stringify(data.detail) : "Validation error.";
+                    showMessage(detail, "red");
+                    return;
+                }
+
+                if (!resp.ok) {
+                    const data = await resp.json().catch(() => ({}));
+                    const detail = data && data.detail ? data.detail : "Create failed.";
+                    showMessage(detail, "red");
+                    return;
+                }
+
+                showMessage("Calculation created successfully.", "green");
+                aInput.value = "";
+                bInput.value = "";
+                typeSelect.value = "add";
+                await loadCalculations();
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while creating calculation.", "red");
+            }
+        }
+
+        document.getElementById("create-button").addEventListener("click", handleCreateClick);
+        window.addEventListener("DOMContentLoaded", loadCalculations);
+    </script>
+</body>
+</html>

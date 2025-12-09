@@ -1,0 +1,90 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fastapi_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastapi_test_db
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          source .venv/bin/activate
+          python -m playwright install --with-deps
+
+      - name: Ensure fastapi_test_db exists
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -d postgres -c "CREATE DATABASE fastapi_test_db;" || echo "DB already exists"
+
+      - name: Start FastAPI server and run tests
+        run: |
+          source .venv/bin/activate
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+
+          SERVER_PID=$!
+          echo "Started uvicorn with PID $SERVER_PID"
+          # Give server a moment to start
+          sleep 5
+
+          # Run all tests (unit, integration, e2e)
+          pytest -q
+
+          # Stop uvicorn (even if pytest failed)
+          kill $SERVER_PID || echo "Server already stopped"
+
+  docker-build-and-push:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-project:latest
