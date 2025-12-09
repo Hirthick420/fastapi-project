@@ -1,4 +1,4 @@
-# 🚀 FastAPI Calculator API — Module 13
+# 🚀 FastAPI Calculator API — Module 14
 
 <div align="center">
 
@@ -9,6 +9,47 @@
 A production-ready FastAPI application with user authentication, calculator operations, PostgreSQL persistence, comprehensive testing, Docker support, and GitHub Actions CI/CD pipeline.
 
 </div>
+
+---
+
+## ⚡ Quick Start
+
+### How to run the app locally
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+**API docs (Swagger UI):** http://127.0.0.1:8000/docs
+
+#### Auth pages:
+- **Register:** http://127.0.0.1:8000/register-page
+- **Login:** http://127.0.0.1:8000/login-page
+
+#### Calculations BREAD page:
+- http://127.0.0.1:8000/calculations-page
+
+### How to run tests
+
+```bash
+pytest
+```
+
+This runs:
+- Unit tests
+- Integration tests (with Postgres test DB)
+- Playwright E2E tests (Chromium) for auth + calculations BREAD UI
+
+### Docker image
+
+The app is also available as a Docker image:
+
+```bash
+docker pull hirthick420/fastapi-project:latest
+```
 
 ---
 
@@ -46,9 +87,14 @@ A production-ready FastAPI application with user authentication, calculator oper
   - `PUT /calculations/{id}` — Update calculation
   - `DELETE /calculations/{id}` — Delete calculation
 
+### 🌐 Frontend Pages
+- **Register & Login pages** — User authentication UI
+- **Calculations BREAD page** — Create, Read, Update, Delete calculations
+
 ### 🧪 Testing & Quality
 - Unit tests for schemas, factory patterns, security
 - Integration tests for database + API routes
+- Playwright E2E tests for UI workflows
 - 100% test coverage with pytest
 
 ### 🐳 Docker & Deployment
@@ -86,7 +132,11 @@ fastapi-project/
 │   │   ├── user.py
 │   │   └── calculation.py
 │   ├── dependencies.py
-│   └── main.py
+│   ├── main.py
+│   └── routes/
+│       ├── pages.py
+│       ├── users.py
+│       └── calculations.py
 │
 ├── tests/
 │   ├── unit/
@@ -94,16 +144,19 @@ fastapi-project/
 │   │   ├── test_security.py
 │   │   ├── test_calculation_schemas.py
 │   │   └── test_schemas.py
-│   └── integration/
-│       ├── test_user_model.py
-│       ├── test_user_routes.py
-│       ├── test_calculation_model.py
-│       └── test_calculation_routes.py
+│   ├── integration/
+│   │   ├── test_user_model.py
+│   │   ├── test_user_routes.py
+│   │   ├── test_calculation_model.py
+│   │   └── test_calculation_routes.py
+│   └── e2e/
+│       ├── test_auth_flow.py
+│       └── test_calculations_bread.py
 │
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
-├── reflection_md12.md
+├── reflection_md14.md
 └── README.md
 ```
 
@@ -121,14 +174,14 @@ cd fastapi-project
 
 **Linux/macOS:**
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 **Windows:**
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
+python -m venv venv
+venv\Scripts\activate
 ```
 
 ### 3️⃣ Install Dependencies
@@ -168,6 +221,9 @@ uvicorn app.main:app --reload
 - 🌐 API Root: http://127.0.0.1:8000
 - 📚 Swagger UI: http://127.0.0.1:8000/docs
 - 📖 ReDoc: http://127.0.0.1:8000/redoc
+- 🔐 Register: http://127.0.0.1:8000/register-page
+- 🔑 Login: http://127.0.0.1:8000/login-page
+- 🧮 Calculations: http://127.0.0.1:8000/calculations-page
 
 ---
 
@@ -277,12 +333,12 @@ Run specific test file:
 pytest tests/unit/test_calculation_factory.py -v
 ```
 
-**Expected output:**
-```
-====================== all tests passed ======================
-```
+**Test suites:**
+- **Unit tests** — Logic & schema validation
+- **Integration tests** — Database + API routes (requires PostgreSQL)
+- **E2E tests** — Browser automation with Playwright (auth & calculations UI)
 
-> ⚠️ **Note**: Integration tests require PostgreSQL running (`docker-compose up -d`)
+> ⚠️ **Note**: Integration & E2E tests require PostgreSQL running (`docker-compose up -d`)
 
 ---
 
@@ -295,6 +351,13 @@ docker-compose up --build
 ```
 
 This starts both the FastAPI app and PostgreSQL database.
+
+### Pull & Run Pre-built Image
+
+```bash
+docker pull hirthick420/fastapi-project:latest
+docker run -p 8000:8000 hirthick420/fastapi-project:latest
+```
 
 ### Manual Docker Build & Push
 
@@ -319,8 +382,9 @@ docker-compose down
 1. ✅ Python environment setup
 2. 📦 Install dependencies
 3. 🧪 Run unit & integration tests
-4. 🐳 Build Docker image
-5. 📤 Push to Docker Hub (requires secrets)
+4. 🎭 Run Playwright E2E tests
+5. 🐳 Build Docker image
+6. 📤 Push to Docker Hub (requires secrets)
 
 ### Required Secrets in GitHub:
 - `DOCKER_USERNAME` — Docker Hub username
@@ -330,14 +394,14 @@ docker-compose down
 
 ## 📝 Reflection
 
-Detailed reflection on the project is available in [`reflection_md12.md`](./reflection_md12.md).
+Detailed reflection on the project is available in [`reflection_md14.md`](./reflection_md14.md).
 
 **Topics covered:**
-- Secure API route design
-- SQLAlchemy + Pydantic integration
-- Integration test debugging strategies
-- Docker networking & multi-container setups
-- CI/CD pipeline learnings
+- Frontend page development with FastAPI templates
+- BREAD CRUD operations via web UI
+- Playwright E2E testing strategies
+- Full-stack application architecture
+- Docker deployment & CI/CD optimization
 
 ---
 
@@ -345,11 +409,14 @@ Detailed reflection on the project is available in [`reflection_md12.md`](./refl
 
 Please include the following screenshots in your submission:
 
-1. ✅ **Pytest Output** — All tests passed
+1. ✅ **Pytest Output** — All tests passed (unit, integration, E2E)
 2. 🎨 **Swagger UI** — User & calculator endpoints
-3. 🚀 **GitHub Actions** — Successful CI/CD pipeline
-4. 🐳 **Docker Desktop** — Running containers
-5. 📊 **Sample Calculation** — Created via Swagger UI
+3. 🌐 **Register Page** — User registration form
+4. 🔐 **Login Page** — User login form
+5. 🧮 **Calculations Page** — BREAD UI for calculations
+6. 🚀 **GitHub Actions** — Successful CI/CD pipeline
+7. 🐳 **Docker Desktop** — Running containers
+8. 📊 **Sample Calculation** — Created via web UI
 
 ---
 
