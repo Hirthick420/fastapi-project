@@ -10,9 +10,16 @@ def test_valid_calculation_create():
     assert obj.type == "add"
 
 
+def test_valid_power_type():
+    # 'power' is now a valid operation in the final project
+    obj = CalculationCreate(a=2, b=3, type="power")
+    assert obj.type == "power"
+
+
 def test_invalid_type():
+    # Use a truly invalid type, not 'power' anymore
     with pytest.raises(ValidationError):
-        CalculationCreate(a=5, b=3, type="power")
+        CalculationCreate(a=5, b=3, type="invalid_type")
 
 
 def test_divide_by_zero_invalid():
