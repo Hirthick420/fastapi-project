@@ -19,6 +19,7 @@ from app.models.calculation import Calculation
 from app.schemas.calculation import CalculationCreate, CalculationRead
 
 from app.routers import auth
+from app.core.calculation_factory import perform_calculation  # 🔹 NEW IMPORT
 
 # -------------------------
 # DB setup
@@ -53,6 +54,7 @@ def register_page():
 def login_page():
     return FileResponse("app/static/html/login.html")
 
+
 @app.get("/calculations-page", include_in_schema=False)
 def calculations_page():
     return FileResponse("app/static/html/calculations.html")
@@ -78,12 +80,13 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         username=user_in.username,
         email=user_in.email,
-        password_hash=hashed_pw,  # ✅ here too
+        password_hash=hashed_pw,
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 @app.post("/users/login", response_model=UserRead)
 def login_user(user_in: UserCreate, db: Session = Depends(get_db)):
@@ -100,21 +103,15 @@ def login_user(user_in: UserCreate, db: Session = Depends(get_db)):
 # CALCULATION ROUTES
 # -------------------------
 def _compute_result(a: float, b: float, type_: str) -> float:
-    """Pure function that actually does the math."""
-    if type_ == "add":
-        return a + b
-    if type_ == "sub":
-        return a - b
-    if type_ == "mul":
-        return a * b
-    if type_ == "div":
-        if b == 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Division by zero is not allowed",
-            )
-        return a / b
-    raise HTTPException(status_code=400, detail="Invalid calculation type")
+    """Pure function that actually does the math via the calculation factory."""
+    try:
+        return perform_calculation(a, b, type_)
+    except ValueError as e:
+        # Convert domain errors into HTTP 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @app.get("/calculations", response_model=List[CalculationRead])

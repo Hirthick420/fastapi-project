@@ -72,3 +72,35 @@ def test_division_by_zero_validation_error():
     assert resp.status_code == 422
     body = resp.json()
     assert "detail" in body
+
+
+def test_power_calculation_route():
+    """
+    Ensure advanced 'power' operation works end-to-end via the /calculations route.
+    """
+    payload = {"a": 2, "b": 3, "type": "power"}
+
+    resp = client.post("/calculations", json=payload)
+    assert resp.status_code == 201
+
+    data = resp.json()
+    assert data["a"] == 2
+    assert data["b"] == 3
+    assert data["type"] == "power"
+    assert data["result"] == 8  # 2 ** 3 = 8
+
+
+def test_log_invalid_base_validation_error():
+    """
+    Logarithm with invalid base (b == 1) should fail Pydantic validation and return 422.
+    """
+    bad_payload = {"a": 10, "b": 1, "type": "log"}
+
+    resp = client.post("/calculations", json=bad_payload)
+    assert resp.status_code == 422
+
+    body = resp.json()
+    assert "detail" in body
+    # Optional: check that our error message about base is in the details
+    error_messages = str(body["detail"])
+    assert "Logarithm base must be > 0 and != 1" in error_messages

@@ -26,11 +26,27 @@
 
         <label for="type">Operation:</label>
         <select id="type" name="type" required>
+            <!-- Basic operations -->
             <option value="add">add</option>
             <option value="sub">sub</option>
             <option value="mul">mul</option>
             <option value="div">div</option>
+
+            <!-- Advanced operations -->
+            <option value="power">power (a^b)</option>
+            <option value="mod">mod (a % b)</option>
+            <option value="floordiv">floordiv (a // b)</option>
+            <option value="sqrt">sqrt (√a)</option>
+            <option value="log">log (log base b of a)</option>
+            <option value="factorial">factorial (a!)</option>
+            <option value="absdiff">absdiff (|a - b|)</option>
         </select><br><br>
+
+        <small>
+            Notes: For <strong>sqrt</strong> and <strong>factorial</strong>, only A is used (B can be 0).<br>
+            For <strong>log</strong>, A must be &gt; 0 and B must be &gt; 0 and not 1 (log base B of A).
+        </small>
+        <br><br>
 
         <button type="button" id="create-button">Create Calculation</button>
     </form>
@@ -58,6 +74,21 @@
     <script>
         const messageEl = document.getElementById("message");
         const rowsEl = document.getElementById("calc-rows");
+
+        // All valid operation types supported by the backend
+        const ALLOWED_TYPES = [
+            "add",
+            "sub",
+            "mul",
+            "div",
+            "power",
+            "mod",
+            "floordiv",
+            "sqrt",
+            "log",
+            "factorial",
+            "absdiff",
+        ];
 
         function showMessage(text, color = "black") {
             messageEl.textContent = text;
@@ -127,7 +158,10 @@
                     if (newA === null) return;
                     const newB = prompt("Enter new B:", currentB);
                     if (newB === null) return;
-                    const newType = prompt("Enter new type (add/sub/mul/div):", currentType);
+                    const newType = prompt(
+                        "Enter new type (add/sub/mul/div/power/mod/floordiv/sqrt/log/factorial/absdiff):",
+                        currentType
+                    );
                     if (newType === null) return;
 
                     const aVal = parseFloat(newA);
@@ -138,8 +172,11 @@
                         return;
                     }
 
-                    if (!["add", "sub", "mul", "div"].includes(newType)) {
-                        showMessage("Type must be one of: add, sub, mul, div.", "red");
+                    if (!ALLOWED_TYPES.includes(newType)) {
+                        showMessage(
+                            "Type must be one of: " + ALLOWED_TYPES.join(", ") + ".",
+                            "red"
+                        );
                         return;
                     }
 
@@ -210,8 +247,11 @@
                 return;
             }
 
-            if (!["add", "sub", "mul", "div"].includes(typeVal)) {
-                showMessage("Type must be one of: add, sub, mul, div.", "red");
+            if (!ALLOWED_TYPES.includes(typeVal)) {
+                showMessage(
+                    "Type must be one of: " + ALLOWED_TYPES.join(", ") + ".",
+                    "red"
+                );
                 return;
             }
 
