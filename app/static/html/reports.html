@@ -1,0 +1,183 @@
+<!-- app/static/html/reports.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports & History</title>
+</head>
+<body>
+    <h1>Calculator Reports & History</h1>
+
+    <p>
+        Go back to <a href="/calculations-page">/calculations-page</a> to add or edit calculations.
+        This page uses the <code>/reports/summary</code> and <code>/reports/recent</code> APIs.
+    </p>
+
+    <p id="message"></p>
+
+    <section>
+        <h2>Summary</h2>
+        <button type="button" id="refresh-button">Refresh Reports</button>
+
+        <p id="total-calculations"></p>
+        <p id="most-used-type"></p>
+        <p id="average-a"></p>
+        <p id="average-b"></p>
+        <p id="last-calculation-id"></p>
+
+        <h3>Counts by Operation Type</h3>
+        <table border="1" cellpadding="5" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Operation Type</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody id="type-count-rows">
+                <!-- filled by JS -->
+            </tbody>
+        </table>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Recent Calculations</h2>
+        <label for="recent-limit">Show last N calculations:</label>
+        <input type="number" id="recent-limit" value="10" min="1" max="100">
+        <button type="button" id="recent-refresh-button">Load Recent</button>
+
+        <table border="1" cellpadding="5" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>A</th>
+                    <th>B</th>
+                    <th>Type</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody id="recent-rows">
+                <!-- filled by JS -->
+            </tbody>
+        </table>
+    </section>
+
+    <script>
+        const messageEl = document.getElementById("message");
+        const totalEl = document.getElementById("total-calculations");
+        const mostUsedEl = document.getElementById("most-used-type");
+        const avgAEl = document.getElementById("average-a");
+        const avgBEl = document.getElementById("average-b");
+        const lastIdEl = document.getElementById("last-calculation-id");
+        const typeCountRows = document.getElementById("type-count-rows");
+        const recentRows = document.getElementById("recent-rows");
+        const recentLimitInput = document.getElementById("recent-limit");
+
+        function showMessage(text, color = "black") {
+            messageEl.textContent = text;
+            messageEl.style.color = color;
+        }
+
+        async function loadSummary() {
+            try {
+                const resp = await fetch("/reports/summary");
+                if (!resp.ok) {
+                    showMessage("Failed to load summary.", "red");
+                    return;
+                }
+                const data = await resp.json();
+
+                totalEl.textContent = "Total calculations: " + data.total_calculations;
+                mostUsedEl.textContent =
+                    "Most used operation type: " + (data.most_used_type ?? "N/A");
+                avgAEl.textContent =
+                    "Average A: " + (data.average_a !== null ? data.average_a : "N/A");
+                avgBEl.textContent =
+                    "Average B: " + (data.average_b !== null ? data.average_b : "N/A");
+                lastIdEl.textContent =
+                    "Last calculation ID: " + (data.last_calculation_id ?? "N/A");
+
+                typeCountRows.innerHTML = "";
+                const counts = data.counts_by_type || {};
+                const types = Object.keys(counts);
+
+                if (types.length === 0) {
+                    const tr = document.createElement("tr");
+                    const td = document.createElement("td");
+                    td.colSpan = 2;
+                    td.textContent = "No data yet.";
+                    tr.appendChild(td);
+                    typeCountRows.appendChild(tr);
+                } else {
+                    for (const t of types) {
+                        const tr = document.createElement("tr");
+                        const tdType = document.createElement("td");
+                        const tdCount = document.createElement("td");
+                        tdType.textContent = t;
+                        tdCount.textContent = counts[t];
+                        tr.appendChild(tdType);
+                        tr.appendChild(tdCount);
+                        typeCountRows.appendChild(tr);
+                    }
+                }
+
+                showMessage("Reports loaded successfully.", "green");
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while loading summary.", "red");
+            }
+        }
+
+        async function loadRecent() {
+            const limitVal = parseInt(recentLimitInput.value, 10);
+            const limit = Number.isNaN(limitVal) ? 10 : limitVal;
+
+            try {
+                const resp = await fetch(`/reports/recent?limit=${limit}`);
+                if (!resp.ok) {
+                    showMessage("Failed to load recent calculations.", "red");
+                    return;
+                }
+                const items = await resp.json();
+                recentRows.innerHTML = "";
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    const tr = document.createElement("tr");
+                    const td = document.createElement("td");
+                    td.colSpan = 5;
+                    td.textContent = "No calculations yet.";
+                    tr.appendChild(td);
+                    recentRows.appendChild(tr);
+                    return;
+                }
+
+                for (const item of items) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${item.id}</td>
+                        <td>${item.a}</td>
+                        <td>${item.b}</td>
+                        <td>${item.type}</td>
+                        <td>${item.result}</td>
+                    `;
+                    recentRows.appendChild(tr);
+                }
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while loading recent calculations.", "red");
+            }
+        }
+
+        document.getElementById("refresh-button")
+            .addEventListener("click", loadSummary);
+        document.getElementById("recent-refresh-button")
+            .addEventListener("click", loadRecent);
+
+        window.addEventListener("DOMContentLoaded", () => {
+            loadSummary();
+            loadRecent();
+        });
+    </script>
+</body>
+</html>

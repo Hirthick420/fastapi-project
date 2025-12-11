@@ -20,6 +20,8 @@ from app.schemas.calculation import CalculationCreate, CalculationRead
 
 from app.routers import auth
 from app.core.calculation_factory import perform_calculation  # 🔹 NEW IMPORT
+from app.routers import auth, reports
+
 
 # -------------------------
 # DB setup
@@ -33,9 +35,13 @@ app = FastAPI(title="FastAPI Calculator API")
 
 # Routers (JWT auth router, etc.)
 app.include_router(auth.router)
+app.include_router(reports.router)   # NEW
 
 # Static files (CSS/JS) for front-end
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+
 
 # -------------------------
 # Root + HTML pages
@@ -58,6 +64,11 @@ def login_page():
 @app.get("/calculations-page", include_in_schema=False)
 def calculations_page():
     return FileResponse("app/static/html/calculations.html")
+
+@app.get("/reports-page", include_in_schema=False)
+def reports_page():
+    return FileResponse("app/static/html/reports.html")
+
 
 
 # -------------------------
