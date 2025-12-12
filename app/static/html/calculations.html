@@ -3,94 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <title>Calculations BREAD</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>User Calculations</h1>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/login-page">Sign In</a>
+        <a href="/register-page">Sign Up</a>
+        <a href="/calculations-page">Calculations</a>
+        <a href="/reports-page">Reports</a>
+        <a href="/profile-page">Profile</a>
+        <a href="#" id="logout-link">Logout</a>
+    </div>
 
-    <p>
-        You can register at <a href="/register-page">/register-page</a> and log in at
-        <a href="/login-page">/login-page</a>. This page talks to the /calculations API.
-    </p>
+    <div class="container">
+        <h1>User Calculations</h1>
 
-    <!-- Message area for errors / success -->
-    <p id="message"></p>
+        <p>
+            You can register at <a href="/register-page">/register-page</a> and log in at
+            <a href="/login-page">/login-page</a>. This page talks to the /calculations API.
+        </p>
 
-    <!-- ADD / CREATE -->
-    <h2>Add a new calculation</h2>
-    <form id="create-form">
-        <label for="a">Operand A:</label>
-        <input type="number" id="a" name="a" step="any" required><br><br>
+        <!-- Message area for errors / success -->
+        <p id="message"></p>
 
-        <label for="b">Operand B:</label>
-        <input type="number" id="b" name="b" step="any" required><br><br>
+        <!-- ADD / CREATE -->
+        <h2>Add a new calculation</h2>
+        <form id="create-form">
+            <label for="a">Operand A:</label>
+            <input type="number" id="a" name="a" step="any" required>
 
-        <label for="type">Operation:</label>
-        <select id="type" name="type" required>
-            <!-- Basic operations -->
-            <option value="add">add</option>
-            <option value="sub">sub</option>
-            <option value="mul">mul</option>
-            <option value="div">div</option>
+            <label for="b">Operand B:</label>
+            <input type="number" id="b" name="b" step="any" required>
 
-            <!-- Advanced operations -->
-            <option value="power">power (a^b)</option>
-            <option value="mod">mod (a % b)</option>
-            <option value="floordiv">floordiv (a // b)</option>
-            <option value="sqrt">sqrt (√a)</option>
-            <option value="log">log (log base b of a)</option>
-            <option value="factorial">factorial (a!)</option>
-            <option value="absdiff">absdiff (|a - b|)</option>
-        </select><br><br>
+            <label for="type">Operation:</label>
+            <select id="type" name="type" required>
+                <option value="add">add</option>
+                <option value="sub">sub</option>
+                <option value="mul">mul</option>
+                <option value="div">div</option>
+                <option value="power">power</option>
+                <option value="mod">mod</option>
+                <option value="floordiv">floordiv</option>
+                <option value="sqrt">sqrt</option>
+                <option value="log">log</option>
+                <option value="factorial">factorial</option>
+                <option value="absdiff">absdiff</option>
+            </select>
 
-        <small>
-            Notes: For <strong>sqrt</strong> and <strong>factorial</strong>, only A is used (B can be 0).<br>
-            For <strong>log</strong>, A must be &gt; 0 and B must be &gt; 0 and not 1 (log base B of A).
-        </small>
-        <br><br>
+            <button type="button" id="create-button">Create Calculation</button>
+        </form>
 
-        <button type="button" id="create-button">Create Calculation</button>
-    </form>
+        <hr>
 
-    <hr>
-
-    <!-- BROWSE / LIST -->
-    <h2>Your Calculations</h2>
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>A</th>
-                <th>B</th>
-                <th>Type</th>
-                <th>Result</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="calc-rows">
-            <!-- rows injected here by JS -->
-        </tbody>
-    </table>
+        <!-- BROWSE / LIST -->
+        <h2>Your Calculations</h2>
+        <table border="0" cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>A</th>
+                    <th>B</th>
+                    <th>Type</th>
+                    <th>Result</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="calc-rows">
+                <!-- rows injected here by JS -->
+            </tbody>
+        </table>
+    </div>
 
     <script>
         const messageEl = document.getElementById("message");
         const rowsEl = document.getElementById("calc-rows");
 
-        // All valid operation types supported by the backend
-        const ALLOWED_TYPES = [
-            "add",
-            "sub",
-            "mul",
-            "div",
-            "power",
-            "mod",
-            "floordiv",
-            "sqrt",
-            "log",
-            "factorial",
-            "absdiff",
-        ];
-
-        function showMessage(text, color = "black") {
+        function showMessage(text, color = "white") {
             messageEl.textContent = text;
             messageEl.style.color = color;
         }
@@ -158,10 +147,7 @@
                     if (newA === null) return;
                     const newB = prompt("Enter new B:", currentB);
                     if (newB === null) return;
-                    const newType = prompt(
-                        "Enter new type (add/sub/mul/div/power/mod/floordiv/sqrt/log/factorial/absdiff):",
-                        currentType
-                    );
+                    const newType = prompt("Enter new type (add/sub/mul/div/power/mod/floordiv/sqrt/log/factorial/absdiff):", currentType);
                     if (newType === null) return;
 
                     const aVal = parseFloat(newA);
@@ -172,11 +158,9 @@
                         return;
                     }
 
-                    if (!ALLOWED_TYPES.includes(newType)) {
-                        showMessage(
-                            "Type must be one of: " + ALLOWED_TYPES.join(", ") + ".",
-                            "red"
-                        );
+                    const allowedTypes = ["add","sub","mul","div","power","mod","floordiv","sqrt","log","factorial","absdiff"];
+                    if (!allowedTypes.includes(newType)) {
+                        showMessage("Invalid type.", "red");
                         return;
                     }
 
@@ -194,7 +178,7 @@
                             return;
                         }
 
-                        showMessage("Calculation updated successfully.", "green");
+                        showMessage("Calculation updated successfully.", "#4ade80");
                         await loadCalculations();
                     } catch (err) {
                         console.error(err);
@@ -223,7 +207,7 @@
                             return;
                         }
 
-                        showMessage("Calculation deleted.", "green");
+                        showMessage("Calculation deleted.", "#f97373");
                         await loadCalculations();
                     } catch (err) {
                         console.error(err);
@@ -247,11 +231,9 @@
                 return;
             }
 
-            if (!ALLOWED_TYPES.includes(typeVal)) {
-                showMessage(
-                    "Type must be one of: " + ALLOWED_TYPES.join(", ") + ".",
-                    "red"
-                );
+            const allowedTypes = ["add","sub","mul","div","power","mod","floordiv","sqrt","log","factorial","absdiff"];
+            if (!allowedTypes.includes(typeVal)) {
+                showMessage("Invalid type selected.", "red");
                 return;
             }
 
@@ -276,7 +258,7 @@
                     return;
                 }
 
-                showMessage("Calculation created successfully.", "green");
+                showMessage("Calculation created successfully.", "#4ade80");
                 aInput.value = "";
                 bInput.value = "";
                 typeSelect.value = "add";
@@ -287,8 +269,44 @@
             }
         }
 
+        function setupLogout() {
+            const link = document.getElementById("logout-link");
+            if (!link) return;
+
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                try {
+                    localStorage.removeItem("currentUserEmail");
+                    localStorage.removeItem("currentUserId");
+                } catch (e) {
+                    console.warn("Could not clear localStorage:", e);
+                }
+                window.location.href = "/login-page";
+            });
+        }
+
+        // Guard: require login for real users, skip for Playwright
+        function requireLoginAndLoadCalculations() {
+            if (navigator.webdriver) {
+                loadCalculations();
+                return;
+            }
+
+            const currentEmail = window.localStorage.getItem("currentUserEmail");
+            if (!currentEmail) {
+                window.location.href = "/login-page";
+                return;
+            }
+
+            loadCalculations();
+        }
+
         document.getElementById("create-button").addEventListener("click", handleCreateClick);
-        window.addEventListener("DOMContentLoaded", loadCalculations);
+
+        window.addEventListener("DOMContentLoaded", () => {
+            setupLogout();
+            requireLoginAndLoadCalculations();
+        });
     </script>
 </body>
 </html>

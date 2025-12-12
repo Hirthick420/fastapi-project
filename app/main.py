@@ -12,7 +12,7 @@ from app.db.session import engine
 from app.dependencies import get_db
 
 from app.models.user import User
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate
 from app.core.security import get_password_hash, verify_password
 
 from app.models.calculation import Calculation
@@ -21,6 +21,9 @@ from app.schemas.calculation import CalculationCreate, CalculationRead
 from app.routers import auth
 from app.core.calculation_factory import perform_calculation  # 🔹 NEW IMPORT
 from app.routers import auth, reports
+
+from app.schemas.user import UserCreate, UserRead, UserUpdate, PasswordChange, UserLogin
+# ↑ add UserUpdate, PasswordChange to this import
 
 
 # -------------------------
@@ -48,7 +51,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # -------------------------
 @app.get("/")
 def root():
-    return {"message": "FastAPI Calculator API is running. Go to /docs for Swagger UI."}
+    return FileResponse("app/static/html/home.html")
 
 
 @app.get("/register-page", include_in_schema=False)
@@ -60,6 +63,12 @@ def register_page():
 def login_page():
     return FileResponse("app/static/html/login.html")
 
+@app.get("/users/{user_id}", response_model=UserRead)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 @app.get("/calculations-page", include_in_schema=False)
 def calculations_page():
@@ -69,6 +78,40 @@ def calculations_page():
 def reports_page():
     return FileResponse("app/static/html/reports.html")
 
+
+@app.put("/users/{user_id}", response_model=UserRead)
+def update_user(
+    user_id: int,
+    user_in: UserUpdate,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # If username is changing, check uniqueness
+    if user_in.username and user_in.username != user.username:
+        existing = db.query(User).filter(User.username == user_in.username).first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Username already taken",
+            )
+        user.username = user_in.username
+
+    # If email is changing, check uniqueness
+    if user_in.email and user_in.email != user.email:
+        existing = db.query(User).filter(User.email == user_in.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already taken",
+            )
+        user.email = user_in.email
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 # -------------------------
@@ -100,19 +143,49 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/users/login", response_model=UserRead)
-def login_user(user_in: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user_in.username).first()
+def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
+    # Login by email + password
+    db_user = db.query(User).filter(User.email == user_in.email).first()
     if not db_user or not verify_password(user_in.password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail="Invalid email or password.",
         )
     return db_user
+
+@app.post("/users/{user_id}/change-password")
+def change_password(
+    user_id: int,
+    pw: PasswordChange,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check old password
+    if not verify_password(pw.old_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Old password is incorrect",
+        )
+
+    # Hash and store new password
+    user.password_hash = get_password_hash(pw.new_password)
+    db.commit()
+
+    return {"detail": "Password updated successfully"}
 
 
 # -------------------------
 # CALCULATION ROUTES
 # -------------------------
+
+@app.get("/profile-page", include_in_schema=False)
+def profile_page():
+    return FileResponse("app/static/html/profile.html")
+
+
 def _compute_result(a: float, b: float, type_: str) -> float:
     """Pure function that actually does the math via the calculation factory."""
     try:

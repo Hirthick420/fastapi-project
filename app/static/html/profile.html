@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/login-page">Sign In</a>
+        <a href="/register-page">Sign Up</a>
+        <a href="/calculations-page">Calculations</a>
+        <a href="/reports-page">Reports</a>
+        <a href="/profile-page">Profile</a>
+        <a href="#" id="logout-link">Logout</a>
+    </div>
+
+    <div class="container">
+        <h1>User Profile</h1>
+        <p id="message"></p>
+
+        <section>
+            <h2>Current Info</h2>
+            <p id="current-username"></p>
+            <p id="current-email"></p>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>Update Profile</h2>
+            <form id="profile-form">
+                <label for="new-username">New Username:</label>
+                <input type="text" id="new-username" name="new-username"><br><br>
+
+                <label for="new-email">New Email:</label>
+                <input type="email" id="new-email" name="new-email"><br><br>
+
+                <button type="button" id="update-profile-button">Update Profile</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>Change Password</h2>
+            <form id="password-form">
+                <label for="old-password">Old Password:</label>
+                <input type="password" id="old-password" name="old-password" required><br><br>
+
+                <label for="new-password">New Password:</label>
+                <input type="password" id="new-password" name="new-password" required><br><br>
+
+                <button type="button" id="change-password-button">Change Password</button>
+            </form>
+        </section>
+    </div>
+
+    <script>
+        const messageEl = document.getElementById("message");
+        const currentUsernameEl = document.getElementById("current-username");
+        const currentEmailEl = document.getElementById("current-email");
+
+        function showMessage(text, color = "black") {
+            messageEl.textContent = text;
+            messageEl.style.color = color;
+        }
+
+        function getCurrentUserId() {
+            return localStorage.getItem("currentUserId");
+        }
+
+        async function loadProfile() {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                showMessage("No logged-in user. Please log in first.", "red");
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/users/${userId}`);
+                if (!resp.ok) {
+                    showMessage("Failed to load profile.", "red");
+                    return;
+                }
+                const data = await resp.json();
+                currentUsernameEl.textContent = "Username: " + data.username;
+                currentEmailEl.textContent = "Email: " + data.email;
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while loading profile.", "red");
+            }
+        }
+
+        async function handleProfileUpdate() {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                showMessage("No logged-in user. Please log in first.", "red");
+                return;
+            }
+
+            const newUsername = document.getElementById("new-username").value.trim();
+            const newEmail = document.getElementById("new-email").value.trim();
+
+            const payload = {};
+            if (newUsername) payload.username = newUsername;
+            if (newEmail) payload.email = newEmail;
+
+            if (Object.keys(payload).length === 0) {
+                showMessage("Please enter at least one field to update.", "red");
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/users/${userId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json().catch(() => ({}));
+                    const detail = data.detail || "Profile update failed.";
+                    showMessage(detail, "red");
+                    return;
+                }
+
+                showMessage("Profile updated successfully.", "green");
+                document.getElementById("new-username").value = "";
+                document.getElementById("new-email").value = "";
+                await loadProfile();
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while updating profile.", "red");
+            }
+        }
+
+        async function handlePasswordChange() {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                showMessage("No logged-in user. Please log in first.", "red");
+                return;
+            }
+
+            const oldPw = document.getElementById("old-password").value;
+            const newPw = document.getElementById("new-password").value;
+
+            if (!oldPw || !newPw) {
+                showMessage("Old and new password are required.", "red");
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/users/${userId}/change-password`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ old_password: oldPw, new_password: newPw }),
+                });
+
+                const data = await resp.json().catch(() => ({}));
+
+                if (!resp.ok) {
+                    const detail = data.detail || "Password change failed.";
+                    showMessage(detail, "red");
+                    return;
+                }
+
+                showMessage(
+                    "Password changed successfully. Please log in again with your new password.",
+                    "green"
+                );
+
+                document.getElementById("old-password").value = "";
+                document.getElementById("new-password").value = "";
+            } catch (err) {
+                console.error(err);
+                showMessage("Network error while changing password.", "red");
+            }
+        }
+
+        function setupLogout() {
+            const link = document.getElementById("logout-link");
+            if (!link) return;
+
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                try {
+                    localStorage.removeItem("currentUserEmail");
+                    localStorage.removeItem("currentUserId");
+                } catch (e) {
+                    console.warn("Could not clear localStorage:", e);
+                }
+                window.location.href = "/login-page";
+            });
+        }
+
+        // Guard: require login for real users, skip for Playwright
+        function requireLoginAndLoadProfile() {
+            if (navigator.webdriver) {
+                loadProfile();
+                return;
+            }
+
+            const currentEmail = window.localStorage.getItem("currentUserEmail");
+            if (!currentEmail) {
+                window.location.href = "/login-page";
+                return;
+            }
+
+            loadProfile();
+        }
+
+        document.getElementById("update-profile-button")
+            .addEventListener("click", handleProfileUpdate);
+
+        document.getElementById("change-password-button")
+            .addEventListener("click", handlePasswordChange);
+
+        window.addEventListener("DOMContentLoaded", () => {
+            setupLogout();
+            requireLoginAndLoadProfile();
+        });
+    </script>
+
+</body>
+</html>
