@@ -48,7 +48,7 @@ This runs:
 The app is also available as a Docker image:
 
 ```bash
-docker pull hirthick420/fastapi-project:latest
+docker pull hirthick/fastapi-project:latest
 ```
 
 ---
