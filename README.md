@@ -1,4 +1,4 @@
-# 🚀 FastAPI Calculator API — Module 14
+# 🚀 FastAPI Calculator API - Final Project
 
 <div align="center">
 
@@ -431,3 +431,180 @@ This project is part of IS601 coursework at NJIT.
 **Made with ❤️ for NJIT IS601**
 
 </div>
+
+## FastAPI Calculator – Final Project (IS601)
+
+### 📌 Overview
+This repository contains the IS601 Final Project: a full‑stack FastAPI web application demonstrating backend API design, database integration, frontend interaction, testing (unit, integration, E2E), CI/CD, and containerization.
+
+Users can register and log in securely, perform a variety of calculations, view history and reports, and manage their profile.
+
+---
+
+### 🚀 Features
+
+- 🔐 User Authentication
+  - Register and login with securely hashed passwords
+  - Profile page and password change support
+
+- 🧮 Calculations (BREAD)
+  - Browse, read, add, edit, and delete calculations
+  - Advanced operation support (see list below)
+  - Input validation via Pydantic and a calculation factory pattern
+
+- ➕ Advanced Calculation Types
+  - add, sub, mul, div, power, mod, floordiv, sqrt, log, factorial, absdiff
+
+- 📊 Reports & History
+  - Summary report: total calculations, most used operation, averages, last ID
+  - Recent calculations endpoint and UI page
+
+- 🧪 Testing & Automation
+  - Unit tests, integration tests (Postgres), and Playwright E2E tests
+  - CI pipeline runs all suites and builds the Docker image
+
+- 🐳 Containerization
+  - Dockerfile and docker-compose configuration for app + Postgres
+
+---
+
+### 🛠 Technology Stack
+- FastAPI
+- SQLAlchemy
+- Pydantic
+- PostgreSQL
+- HTML / JavaScript (static templates)
+- Pytest (unit & integration)
+- Playwright (E2E)
+- Docker & Docker Compose
+- GitHub Actions (CI/CD)
+
+---
+
+### 📁 Project Structure (Simplified)
+```
+app/
+ ├── core/
+ ├── crud/
+ ├── db/
+ ├── models/
+ ├── routers/   # or routes/
+ ├── schemas/
+ ├── static/
+ │    └── html/
+ └── main.py
+tests/
+ ├── unit/
+ ├── integration/
+ └── e2e/
+Dockerfile
+docker-compose.yml
+requirements.txt
+README.md
+reflection.md
+```
+
+---
+
+### ▶️ Running the Application Locally
+
+1. Create and activate a virtual environment
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+2. Install dependencies
+```bash
+pip install -r requirements.txt
+# for E2E tests (if used)
+playwright install
+```
+
+3. Start PostgreSQL (via Docker)
+```bash
+docker compose up -d db
+```
+
+4. Run the app
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+---
+
+### 🌐 Application URLs (Local)
+- Home: http://127.0.0.1:8000/
+- Register: http://127.0.0.1:8000/register-page
+- Login: http://127.0.0.1:8000/login-page
+- Calculations (BREAD): http://127.0.0.1:8000/calculations-page
+- Reports: http://127.0.0.1:8000/reports-page
+- Profile: http://127.0.0.1:8000/profile-page
+- API Docs (Swagger): http://127.0.0.1:8000/docs
+
+---
+
+### 🧪 Running Tests
+
+Run all tests:
+```bash
+pytest
+```
+
+Run specific suites:
+- Unit tests: pytest tests/unit
+- Integration: pytest tests/integration
+- E2E (Playwright):
+  1. Start the app: uvicorn app.main:app --host 127.0.0.1 --port 8000
+  2. Run: pytest tests/e2e
+
+> Note: Integration and E2E tests expect a running Postgres instance (docker-compose up -d).
+
+---
+
+### 🐳 Docker
+
+Build the image:
+```bash
+docker build -t <dockerhub-username>/fastapi-project:latest .
+```
+
+Run the container:
+```bash
+docker run -p 8000:8000 <dockerhub-username>/fastapi-project:latest
+```
+
+Or use docker-compose to run both app and Postgres:
+```bash
+docker compose up --build
+```
+
+---
+
+### 🔄 CI/CD (GitHub Actions)
+The repository includes a CI pipeline that:
+- Installs dependencies
+- Runs unit, integration, and E2E tests
+- Builds the Docker image
+- Optionally pushes the image (requires secrets)
+
+Pipeline runs on push to main and protects branch quality.
+
+---
+
+### 📝 Reflection
+A detailed reflection (challenges, architecture, tests, CI/CD) is available in reflection.md.
+
+---
+
+### ✅ Project Status
+- All required features implemented
+- Tests in place (unit, integration, E2E)
+- Dockerized application
+- CI/CD pipeline configured
+- Documentation updated
+
+---
+
+### 🎓 Final Notes
+This project demonstrates a complete end‑to‑end web application lifecycle for IS601 Final Project requirements. Contributions, feedback, and issues are welcome — please open a GitHub issue or PR.

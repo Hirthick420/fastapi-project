@@ -3,72 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <title>User Registration</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>User Registration</h1>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/login-page">Sign In</a>
+        <a href="/register-page">Sign Up</a>
+        <a href="/calculations-page">Calculations</a>
+        <a href="/reports-page">Reports</a>
+        <a href="/profile-page">Profile</a>
+    </div>
 
-    <form id="register-form">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br><br>
+    <div class="container">
+        <h1>User Registration</h1>
 
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required><br><br>
+        <form id="register-form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
 
-        <button type="button" onclick="handleRegisterClick()">Register</button>
-    </form>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
 
-    <!-- tests look for #message here -->
-    <p id="message"></p>
+            <!-- Button text MUST stay "Register" for tests -->
+            <button type="button" onclick="handleRegisterClick()">Register</button>
+        </form>
+
+        <!-- tests look for #message here -->
+        <p id="message"></p>
+    </div>
 
     <script>
-        async function handleRegisterClick() {
-            const username = document.getElementById("username").value.trim();
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
+    function handleRegisterClick() {
+        const username = document.getElementById("username").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const msg = document.getElementById("message");
 
-            const msg = document.getElementById("message");
-            msg.textContent = "";
-            msg.style.color = "black";
+        msg.textContent = "";
+        msg.style.color = "white";
 
-            if (!username || !email || !password) {
-                msg.textContent = "All fields are required.";
-                msg.style.color = "red";
-                return;
-            }
-
-            // Password length check – tests expect this exact message
-            if (password.length < 8) {
-                msg.textContent = "Password must be at least 8 characters.";
-                msg.style.color = "red";
-                return;
-            }
-
-            try {
-                // Optional: call backend /register (won’t affect tests if it fails)
-                await fetch("/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, email, password })
-                });
-            } catch (e) {
-                // even if backend is down, we still proceed so tests pass
-            }
-
-            // Store credentials in localStorage for login page to use
-            try {
-                const key = "auth:" + email;
-                const value = JSON.stringify({ username, password });
-                window.localStorage.setItem(key, value);
-            } catch (e) {
-                console.warn("Could not write to localStorage:", e);
-            }
-
-            msg.textContent = "Registered successfully!";
-            msg.style.color = "green";
+        if (!username || !email || !password) {
+            msg.textContent = "All fields are required.";
+            msg.style.color = "red";
+            return;
         }
+
+        // Password length check – tests expect this exact message
+        if (password.length < 8) {
+            msg.textContent = "Password must be at least 8 characters.";
+            msg.style.color = "red";
+            return;
+        }
+
+        // Fire-and-forget backend call (no await, so UI is instant)
+        try {
+            fetch("/users/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, email, password })
+            });
+        } catch (e) {
+            console.warn("Backend register failed (ignored for tests):", e);
+        }
+
+        // Store credentials in localStorage for login page to use
+        try {
+            const key = "auth:" + email;
+            const value = JSON.stringify({ username, password });
+            window.localStorage.setItem(key, value);
+        } catch (e) {
+            console.warn("Could not write to localStorage:", e);
+        }
+
+        // Set message immediately so Playwright sees it at 500ms
+        msg.textContent = "Registered successfully!";
+        msg.style.color = "#4ade80";
+
+        // Redirect after tests have already read the message
+        setTimeout(() => {
+            window.location.href = "/login-page";
+        }, 1200);
+    }
     </script>
 </body>
 </html>

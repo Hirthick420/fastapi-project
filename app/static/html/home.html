@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FastAPI Calculator – Home</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/login-page">Sign In</a>
+        <a href="/register-page">Sign Up</a>
+        <a href="/calculations-page">Calculations</a>
+        <a href="/reports-page">Reports</a>
+        <a href="/profile-page">Profile</a>
+    </div>
+
+    <div class="container">
+        <h1>Welcome to the FastAPI Calculator Project</h1>
+        <p class="subtitle">
+            This is your IS601 final project: a full-stack FastAPI app with authentication,
+            advanced calculations, reports, and automated tests.
+        </p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h2>1. Create an Account</h2>
+                <p>Register with your email and a strong password.</p>
+                <a class="btn" href="/register-page">Go to Sign Up</a>
+            </div>
+
+            <div class="card">
+                <h2>2. Sign In</h2>
+                <p>Log in to access your profile and calculator features.</p>
+                <a class="btn" href="/login-page">Go to Sign In</a>
+            </div>
+
+            <div class="card">
+                <h2>3. Run Calculations</h2>
+                <p>
+                    Use basic and advanced operations (add, sub, mul, div, power, etc.),
+                    with full BREAD functionality (Browse, Read, Edit, Delete).
+                </p>
+                <a class="btn" href="/calculations-page">Open Calculations</a>
+            </div>
+
+            <div class="card">
+                <h2>4. View Reports</h2>
+                <p>
+                    See summary statistics, operation counts, and recent calculations
+                    all in one place.
+                </p>
+                <a class="btn" href="/reports-page">Open Reports</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

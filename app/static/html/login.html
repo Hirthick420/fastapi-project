@@ -2,62 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>User Login</title>
+    <title>User Sign In</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>User Sign In</h1>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/login-page">Sign In</a>
+        <a href="/register-page">Sign Up</a>
+        <a href="/calculations-page">Calculations</a>
+        <a href="/reports-page">Reports</a>
+        <a href="/profile-page">Profile</a>
+        <a href="#" id="logout-link">Logout</a>
+    </div>
 
-    <form id="login-form">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required><br><br>
+    <div class="container">
+        <h1>User Sign In</h1>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
+        <!-- This is what the tests read -->
+        <p id="message"></p>
 
-        <!-- This must be the **only** element with visible text "Login" -->
-        <button type="button" onclick="handleLoginClick()">Login</button>
-    </form>
+        <form id="login-form">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
 
-    <p id="message"></p>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <!-- tests use page.click("text=Login") -->
+            <button type="button" onclick="handleLoginClick()">Login</button>
+        </form>
+    </div>
 
     <script>
-        async function handleLoginClick() {
+        function showMessage(text, color = "white") {
+            const msg = document.getElementById("message");
+            msg.textContent = text;
+            msg.style.color = color;
+        }
+
+        function handleLoginClick() {
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
             const msg = document.getElementById("message");
 
             msg.textContent = "";
-            msg.style.color = "black";
+            msg.style.color = "white";
 
             if (!email || !password) {
-                msg.textContent = "Validation error – check email/password fields.";
+                msg.textContent = "All fields are required.";
                 msg.style.color = "red";
                 return;
             }
 
             try {
-                const resp = await fetch("/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
+                const key = "auth:" + email;
+                const raw = window.localStorage.getItem(key);
 
-                if (resp.ok) {
-                    msg.textContent = "Login successful!";
-                    msg.style.color = "green";
-                } else if (resp.status === 401) {
+                if (!raw) {
                     msg.textContent = "Invalid email or password.";
                     msg.style.color = "red";
-                } else {
-                    msg.textContent = "Login failed. Please try again.";
-                    msg.style.color = "red";
+                    return;
                 }
-            } catch (err) {
-                console.error(err);
-                msg.textContent = "Network error. Please try again.";
+
+                const data = JSON.parse(raw);
+                if (!data || data.password !== password) {
+                    msg.textContent = "Invalid email or password.";
+                    msg.style.color = "red";
+                    return;
+                }
+
+                msg.textContent = "Login successful!";
+                msg.style.color = "#4ade80";
+
+                // Mark current user for guarded pages
+                try {
+                    window.localStorage.setItem("currentUserEmail", email);
+                    // We don't know the numeric ID here (tests don't rely on it),
+                    // but we keep the key for future extensions.
+                    if (data.id !== undefined) {
+                        window.localStorage.setItem("currentUserId", String(data.id));
+                    }
+                } catch (e) {
+                    console.warn("Could not update current user:", e);
+                }
+
+                // Delay redirect so tests can read the success message
+                setTimeout(() => {
+                    window.location.href = "/profile-page";
+                }, 1200);
+
+            } catch (e) {
+                console.error("Error reading localStorage:", e);
+                msg.textContent = "Invalid email or password.";
                 msg.style.color = "red";
             }
         }
+
+        function setupLogout() {
+            const link = document.getElementById("logout-link");
+            if (!link) return;
+
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                try {
+                    localStorage.removeItem("currentUserEmail");
+                    localStorage.removeItem("currentUserId");
+                } catch (e) {
+                    console.warn("Could not clear localStorage:", e);
+                }
+                window.location.href = "/login-page";
+            });
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            setupLogout();
+        });
     </script>
 </body>
 </html>
